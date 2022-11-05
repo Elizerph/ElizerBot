@@ -4,6 +4,9 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<PackageId>elizerbot</PackageId>
+	<Authors>Elizerph</Authors>
+    <Description>Unified bot adapter for telegram and discord</Description>
   </PropertyGroup>
 
   <ItemGroup>

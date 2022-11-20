@@ -110,11 +110,11 @@ namespace ElizerBot.Telegram
 
         public override async Task<PostedMessageAdapter> EditMessage(PostedMessageAdapter message)
         {
-            var feedbck = await _client.EditMessageTextAsync(message.Chat.Id, int.Parse(message.Id), message.Text);
+            var feedbck = await _client.EditMessageTextAsync(message.Chat.Id, int.Parse(message.Id), message.Text, replyMarkup: GetMarkup(message.Buttons));
             return GetIncomingMessageAdapter(feedbck);
         }
 
-        private static IReplyMarkup? GetMarkup(IReadOnlyList<IReadOnlyList<ButtonAdapter>>? buttonAdapters)
+        private static InlineKeyboardMarkup? GetMarkup(IReadOnlyList<IReadOnlyList<ButtonAdapter>>? buttonAdapters)
         {
             if (buttonAdapters == null)
                 return null;

@@ -11,12 +11,12 @@
             var discordToken = Environment.GetEnvironmentVariable(DiscordTokenVariableName);
 
             var updateHandler = new ExampleUpdateHandler();
-            var bots = new[]
-            { 
-                BotFactory.Create(SupportedMessenger.Telegram, telegramBotToken, updateHandler),
-                BotFactory.Create(SupportedMessenger.Discord, discordToken, updateHandler)
-            };
-            Console.WriteLine("Bot starting…");
+            var bots = new Dictionary<SupportedMessenger, string>
+            {
+                { SupportedMessenger.Telegram, telegramBotToken },
+                { SupportedMessenger.Discord, discordToken }
+            }.Select(e => updateHandler.BuildAdapter(e.Key, e.Value)).ToArray();
+            Console.WriteLine("Bot starting");
             foreach (var bot in bots)
             {
                 await bot.Init();

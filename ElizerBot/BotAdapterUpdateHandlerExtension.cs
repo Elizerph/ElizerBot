@@ -4,9 +4,11 @@ using ElizerBot.Telegram;
 
 namespace ElizerBot
 {
-    public static class BotFactory
+    public static class BotAdapterUpdateHandlerExtension
     {
-        public static BotAdapter Create(SupportedMessenger messenger, string token, IBotAdapterUpdateHandler updateHandler)
+        public static BotAdapter BuildAdapter(this IBotAdapterUpdateHandler updateHandler,
+            SupportedMessenger messenger,
+            string token)
         {
             return messenger switch
             {

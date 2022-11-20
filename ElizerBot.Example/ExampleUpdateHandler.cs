@@ -4,7 +4,7 @@ namespace ElizerBot.Example
 {
     public class ExampleUpdateHandler : IBotAdapterUpdateHandler
     {
-        public async Task HandleButtonPress(IBotAdapter bot, PostedMessageAdapter message, string buttonData)
+        public async Task HandleButtonPress(IBotAdapter bot, PostedMessageAdapter message, UserAdapter user, string buttonData)
         {
             var pressedButton = message.Buttons.SelectMany(e => e).First(e => string.Equals(buttonData, e.Data));
             var response = new NewMessageAdapter(message.Chat)

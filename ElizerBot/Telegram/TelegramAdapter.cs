@@ -50,7 +50,7 @@ namespace ElizerBot.Telegram
                         break;
                     case UpdateType.CallbackQuery:
                         var queryMessage = u.CallbackQuery?.Message ?? throw new InvalidOperationException();
-                        await _updateHandler.HandleButtonPress(this, GetIncomingMessageAdapter(queryMessage), u.CallbackQuery.Data);
+                        await _updateHandler.HandleButtonPress(this, GetIncomingMessageAdapter(queryMessage), GetUserAdapter(u.CallbackQuery.From), u.CallbackQuery.Data);
                         break;
                     default:
                         break;
@@ -63,7 +63,10 @@ namespace ElizerBot.Telegram
 
         private static ChatAdapter GetChatAdapter(Chat chat)
         {
-            return new ChatAdapter(chat.Id.ToString());
+            return new ChatAdapter(chat.Id.ToString(), chat.Type == ChatType.Private)
+            {
+                Title = chat.Title
+            };
         }
 
         private static UserAdapter GetUserAdapter(User user)

@@ -35,8 +35,11 @@ namespace ElizerBot.Discord
             switch (arg.Type)
             {
                 case InteractionType.MessageComponent:
-                    var message = GetIncomingMessageAdapter(arg.Message);
-                    return _updateHandler.HandleButtonPress(this, message, arg.Data.CustomId);
+                    var message = new PostedMessageAdapter(GetChatAdapter(arg.Channel), arg.Message.Id.ToString(), GetUserAdapter(arg.Message.Author))
+                    {
+                        Text = arg.Message.Content
+                    };
+                    return _updateHandler.HandleButtonPress(this, message, GetUserAdapter(arg.User), arg.Data.CustomId);
                 default:
                     return Task.CompletedTask;
             }
@@ -92,9 +95,12 @@ namespace ElizerBot.Discord
             };
         }
 
-        private static ChatAdapter GetChatAdapter(IChannel channel)
+        private static ChatAdapter GetChatAdapter(ISocketMessageChannel channel)
         { 
-            return new ChatAdapter(channel.Id.ToString());
+            return new ChatAdapter(channel.Id.ToString(), channel is IPrivateChannel)
+            { 
+                Title = channel.Name
+            };
         }
 
         private static ButtonAdapter GetButtonAdapter(ButtonComponent component)

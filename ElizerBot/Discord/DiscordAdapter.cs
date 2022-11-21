@@ -63,8 +63,12 @@ namespace ElizerBot.Discord
             if (channel is IMessageChannel messageChannel)
             {
                 var buttonsComponent = GetMessageButtons(message.Buttons);
-                var messageFeedback = await messageChannel.SendMessageAsync(message.Text, components: buttonsComponent);
-                return new PostedMessageAdapter(message.Chat, messageFeedback.Id.ToString(), GetUserAdapter(messageFeedback.Author));
+                var feedback = await messageChannel.SendMessageAsync(message.Text, components: buttonsComponent);
+                return new PostedMessageAdapter(message.Chat, feedback.Id.ToString(), GetUserAdapter(feedback.Author))
+                {
+                    Text = feedback.Content,
+                    Buttons = GetButtonAdapters(feedback.Components.OfType<ActionRowComponent>().ToArray())
+                };
             }
             throw new InvalidOperationException($"{nameof(messageChannel)} is not {typeof(IMessageChannel)}");
         }
@@ -136,7 +140,11 @@ namespace ElizerBot.Discord
                     ps.Content = message.Text;
                     ps.Components = GetMessageButtons(message.Buttons);
                 });
-                return new PostedMessageAdapter(message.Chat, feedback.Id.ToString(), GetUserAdapter(feedback.Author));
+                return new PostedMessageAdapter(message.Chat, feedback.Id.ToString(), GetUserAdapter(feedback.Author))
+                {
+                    Text = feedback.Content,
+                    Buttons = GetButtonAdapters(feedback.Components.OfType<ActionRowComponent>().ToArray())
+                };
             }
             throw new InvalidOperationException($"{nameof(messageChannel)} is not {typeof(IMessageChannel)}");
         }

@@ -50,9 +50,6 @@ namespace ElizerBot.Discord
             if (arg.Author.IsBot)
                 return;
 
-            if (string.IsNullOrEmpty(arg.Content))
-                return;
-
             var message = GetIncomingMessageAdapter(arg);
             await _updateHandler.HandleIncomingMessage(this, message); 
         }
@@ -134,7 +131,7 @@ namespace ElizerBot.Discord
         {
             return new PostedMessageAdapter(GetChatAdapter(message.Channel), message.Id.ToString(), GetUserAdapter(message.Author))
             {
-                Text = message.Content,
+                Text = message.Content ?? string.Empty,
                 Buttons = GetButtonAdapters(message.Components)
             };
         }

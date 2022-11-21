@@ -33,9 +33,7 @@ namespace ElizerBot.Telegram
                 {
                     case UpdateType.Message:
                         var message = u.Message ?? throw new InvalidOperationException($"{nameof(u.Message)} is null");
-                        var messageText = message.Text;
-                        if (string.IsNullOrEmpty(messageText))
-                            throw new InvalidOperationException($"{nameof(messageText)} is null");
+                        var messageText = message.Text ?? string.Empty;
 
                         var messageAuthor = message.From ?? throw new InvalidOperationException($"{nameof(message.From)} is null");
 

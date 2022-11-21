@@ -114,7 +114,9 @@ namespace ElizerBot.Telegram
 
         private static InputOnlineFile GetDocument(FileDescriptorAdapter attachment)
         {
-            return new InputOnlineFile(attachment.ReadFile(), attachment.FileName);
+            var stream = attachment.ReadFile();
+            stream.Position = 0;
+            return new InputOnlineFile(stream, attachment.FileName);
         }
 
         public override async Task<PostedMessageAdapter> EditMessage(PostedMessageAdapter message)

@@ -60,16 +60,18 @@ namespace ElizerBot.Example
         public async Task HandleIncomingMessage(IBotAdapter bot, PostedMessageAdapter message)
         {
             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] {message.Chat.Id}.{message.User.Username}: {message.Text}");
-            var memo = new MemoryStream();
+            using var memo = new MemoryStream();
             using var writer = new StreamWriter(memo);
             await writer.WriteLineAsync(message.Text);
             writer.Flush();
-            memo.Position = 0;
             var fileResponse = new NewMessageAdapter(message.Chat)
             {
                 Text = "File response",
                 Attachment = new FileDescriptorAdapter("response.txt", () => memo)
             };
+            await bot.SendMessage(fileResponse);
+            await File.WriteAllTextAsync("tmp.txt", message.Text);
+            fileResponse.Attachment = new FileDescriptorAdapter("respFile.txt", () => File.OpenRead("tmp.txt"));
             await bot.SendMessage(fileResponse);
         }
     }

@@ -104,8 +104,17 @@ namespace ElizerBot.Telegram
 
         public override async Task<PostedMessageAdapter> SendMessage(NewMessageAdapter message)
         {
-            var textFeedback = await _client.SendTextMessageAsync(message.Chat.Id, message.Text, replyMarkup: GetMarkup(message.Buttons));
-            return GetIncomingMessageAdapter(textFeedback);
+            Message feedback;
+            if (message.Attachment == null)
+                feedback = await _client.SendTextMessageAsync(message.Chat.Id, message.Text, replyMarkup: GetMarkup(message.Buttons));
+            else
+                feedback = await _client.SendDocumentAsync(message.Chat.Id, GetDocument(message.Attachment), caption: message.Text, replyMarkup: GetMarkup(message.Buttons));
+            return GetIncomingMessageAdapter(feedback);
+        }
+
+        private static InputOnlineFile GetDocument(FileDescriptorAdapter attachment)
+        {
+            return new InputOnlineFile(attachment.ReadFile(), attachment.FileName);
         }
 
         public override async Task<PostedMessageAdapter> EditMessage(PostedMessageAdapter message)
@@ -121,11 +130,6 @@ namespace ElizerBot.Telegram
 
             var buttons = buttonAdapters.Select(line => line.Select(b => InlineKeyboardButton.WithCallbackData(b.Label, b.Data)).ToArray()).ToArray();
             return new InlineKeyboardMarkup(buttons);
-        }
-
-        private static InputOnlineFile GetDocument(string fileId)
-        {
-            return new InputOnlineFile(System.IO.File.OpenRead(fileId));
         }
 
         public override Task ClearCommands()

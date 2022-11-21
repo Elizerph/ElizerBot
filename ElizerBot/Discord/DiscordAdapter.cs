@@ -63,7 +63,11 @@ namespace ElizerBot.Discord
             if (channel is IMessageChannel messageChannel)
             {
                 var buttonsComponent = GetMessageButtons(message.Buttons);
-                var feedback = await messageChannel.SendMessageAsync(message.Text, components: buttonsComponent);
+                IUserMessage feedback;
+                if (message.Attachment == null)
+                    feedback = await messageChannel.SendMessageAsync(message.Text, components: buttonsComponent);
+                else
+                    feedback = await messageChannel.SendFileAsync(GetFileAttachment(message.Attachment), message.Text, components: buttonsComponent);
                 return new PostedMessageAdapter(message.Chat, feedback.Id.ToString(), GetUserAdapter(feedback.Author))
                 {
                     Text = feedback.Content,
@@ -71,6 +75,11 @@ namespace ElizerBot.Discord
                 };
             }
             throw new InvalidOperationException($"{nameof(messageChannel)} is not {typeof(IMessageChannel)}");
+        }
+
+        private static FileAttachment GetFileAttachment(FileDescriptorAdapter adapter)
+        {
+            return new FileAttachment(adapter.ReadFile(), adapter.FileName);
         }
 
         private static MessageComponent? GetMessageButtons(IReadOnlyList<IReadOnlyList<ButtonAdapter>>? buttons)

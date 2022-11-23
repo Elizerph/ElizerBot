@@ -3,7 +3,6 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace ElizerBot.Telegram
@@ -12,11 +11,13 @@ namespace ElizerBot.Telegram
     {
         private readonly TelegramBotClient _client;
         private string? _botUsername;
+        private DocumentMessageBuffer _documentBuffer;
 
         public TelegramAdapter(string token, IBotAdapterUpdateHandler updateHandler)
             : base(token, updateHandler)
         {
             _client = new TelegramBotClient(token);
+            _documentBuffer = new DocumentMessageBuffer(updateHandler, TimeSpan.FromSeconds(2));
         }
 
         public override async Task Init()
@@ -38,13 +39,13 @@ namespace ElizerBot.Telegram
                         var messageAuthor = message.From ?? throw new InvalidOperationException($"{nameof(message.From)} is null");
 
                         var entities = message.Entities;
-                        if (entities != null 
-                            && entities.Length == 1 
-                            && entities[0].Type == MessageEntityType.BotCommand 
+                        if (entities != null
+                            && entities.Length == 1
+                            && entities[0].Type == MessageEntityType.BotCommand
                             && (messageText.Contains($"@{_botUsername}") || message.Chat.Type == ChatType.Private))
                             await _updateHandler.HandleCommand(this, GetChatAdapter(message.Chat), GetUserAdapter(messageAuthor), messageText.Replace($"@{_botUsername}", string.Empty).TrimStart('/'));
                         else
-                            await _updateHandler.HandleIncomingMessage(this, GetIncomingMessageAdapter(message));
+                            await _documentBuffer.HandleIncomingMessage(this, message.MediaGroupId, GetIncomingMessageAdapter(message));
                         break;
                     case UpdateType.CallbackQuery:
                         var queryMessage = u.CallbackQuery?.Message ?? throw new InvalidOperationException();
@@ -91,30 +92,62 @@ namespace ElizerBot.Telegram
             return markup?.InlineKeyboard.Select(line => line.Select(GetButtonAdapter).ToArray()).ToArray();
         }
 
-        private static PostedMessageAdapter GetIncomingMessageAdapter(Message message)
+        private PostedMessageAdapter GetIncomingMessageAdapter(Message message)
         {
-            return new PostedMessageAdapter(GetChatAdapter(message.Chat), message.MessageId.ToString(), GetUserAdapter(message.From))
+            var result = new PostedMessageAdapter(GetChatAdapter(message.Chat), message.MessageId.ToString(), GetUserAdapter(message.From))
             {
                 Text = message.Text,
                 Buttons = GetButtonAdapters(message.ReplyMarkup)
             };
+            if (message.Document != null)
+            {
+                result.Attachments = new[]
+                {
+                    new FileDescriptorAdapter(message.Document.FileName, async () =>
+                    {
+                        var stream = new MemoryStream();
+                        await _client.GetInfoAndDownloadFileAsync(message.Document.FileId, stream);
+                        stream.Position = 0;
+                        return stream;
+                    })
+                };
+            }
+            return result;
         }
 
         public override async Task<PostedMessageAdapter> SendMessage(NewMessageAdapter message)
         {
-            Message feedback;
-            if (message.Attachment == null)
-                feedback = await _client.SendTextMessageAsync(message.Chat.Id, message.Text, replyMarkup: GetMarkup(message.Buttons));
-            else
-                feedback = await _client.SendDocumentAsync(message.Chat.Id, GetDocument(message.Attachment), caption: message.Text, replyMarkup: GetMarkup(message.Buttons));
-            return GetIncomingMessageAdapter(feedback);
+            var regularFeedback = await _client.SendTextMessageAsync(message.Chat.Id, message.Text, replyMarkup: GetMarkup(message.Buttons));
+            var result = new PostedMessageAdapter(GetChatAdapter(regularFeedback.Chat), regularFeedback.MessageId.ToString(), GetUserAdapter(regularFeedback.From))
+            {
+                Text = message.Text,
+                Buttons = GetButtonAdapters(regularFeedback.ReplyMarkup)
+            };
+
+            if (message.Attachments != null && message.Attachments.Any())
+            {
+                var documents = await GetDocuments(message.Attachments).ToListAsync();
+                var fileFeedbacks = await _client.SendMediaGroupAsync(message.Chat.Id, documents);
+                var resultAttachments = fileFeedbacks.Select(e => new FileDescriptorAdapter(e.Document.FileName, async () => 
+                {
+                    var stream = new MemoryStream();
+                    await _client.GetInfoAndDownloadFileAsync(e.Document.FileId, stream);
+                    stream.Position = 0;
+                    return stream;
+                })).ToArray();
+                result.Attachments = resultAttachments;
+            }
+            return result;
         }
 
-        private static InputOnlineFile GetDocument(FileDescriptorAdapter attachment)
+        private static async IAsyncEnumerable<IAlbumInputMedia> GetDocuments(IReadOnlyCollection<FileDescriptorAdapter> adapters)
         {
-            var stream = attachment.ReadFile();
-            stream.Position = 0;
-            return new InputOnlineFile(stream, attachment.FileName);
+            foreach (var adapter in adapters)
+            {
+                var stream = await adapter.ReadFile();
+                stream.Position = 0;
+                yield return new InputMediaDocument(new InputMedia(stream, adapter.FileName));
+            }
         }
 
         public override async Task<PostedMessageAdapter> EditMessage(PostedMessageAdapter message)

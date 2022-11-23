@@ -7,6 +7,7 @@ namespace ElizerBot.Discord
 {
     internal class DiscordAdapter : BotAdapter
     {
+        private readonly static HttpClient _httpClient = new();
         private readonly DiscordSocketClient _client;
 
         public DiscordAdapter(string token, IBotAdapterUpdateHandler updateHandler) 
@@ -50,7 +51,12 @@ namespace ElizerBot.Discord
             if (arg.Author.IsBot)
                 return;
 
-            var message = GetIncomingMessageAdapter(arg);
+            var message = new PostedMessageAdapter(GetChatAdapter(arg.Channel), arg.Id.ToString(), GetUserAdapter(arg.Author))
+            {
+                Text = arg.Content ?? string.Empty,
+                Buttons = GetButtonAdapters(arg.Components),
+                Attachments = arg.Attachments.Select(e => new FileDescriptorAdapter(e.Filename, () => _httpClient.GetStreamAsync(e.Url))).ToArray()
+            };
             await _updateHandler.HandleIncomingMessage(this, message); 
         }
 
@@ -61,10 +67,13 @@ namespace ElizerBot.Discord
             {
                 var buttonsComponent = GetMessageButtons(message.Buttons);
                 IUserMessage feedback;
-                if (message.Attachment == null)
+                if (message.Attachments == null || message.Attachments.Count == 0)
                     feedback = await messageChannel.SendMessageAsync(message.Text, components: buttonsComponent);
                 else
-                    feedback = await messageChannel.SendFileAsync(GetFileAttachment(message.Attachment), message.Text, components: buttonsComponent);
+                {
+                    var attachments = await GetFileAttachments(message.Attachments).ToListAsync();
+                    feedback = await messageChannel.SendFilesAsync(attachments, message.Text, components: buttonsComponent);
+                }
                 return new PostedMessageAdapter(message.Chat, feedback.Id.ToString(), GetUserAdapter(feedback.Author))
                 {
                     Text = feedback.Content,
@@ -74,9 +83,13 @@ namespace ElizerBot.Discord
             throw new InvalidOperationException($"{nameof(messageChannel)} is not {typeof(IMessageChannel)}");
         }
 
-        private static FileAttachment GetFileAttachment(FileDescriptorAdapter adapter)
+        private static async IAsyncEnumerable<FileAttachment> GetFileAttachments(IReadOnlyCollection<FileDescriptorAdapter> adapters)
         {
-            return new FileAttachment(adapter.ReadFile(), adapter.FileName);
+            foreach (var adapter in adapters)
+            {
+                var stream = await adapter.ReadFile();
+                yield return new FileAttachment(stream, adapter.FileName);
+            }
         }
 
         private static MessageComponent? GetMessageButtons(IReadOnlyList<IReadOnlyList<ButtonAdapter>>? buttons)
@@ -125,15 +138,6 @@ namespace ElizerBot.Discord
         private static IReadOnlyList<IReadOnlyList<ButtonAdapter>>? GetButtonAdapters(IReadOnlyCollection<ActionRowComponent> components)
         {
             return components.Select(e => e.Components.Cast<ButtonComponent>().Select(GetButtonAdapter).ToArray()).ToArray();
-        }
-
-        private static PostedMessageAdapter GetIncomingMessageAdapter(SocketMessage message)
-        {
-            return new PostedMessageAdapter(GetChatAdapter(message.Channel), message.Id.ToString(), GetUserAdapter(message.Author))
-            {
-                Text = message.Content ?? string.Empty,
-                Buttons = GetButtonAdapters(message.Components)
-            };
         }
 
         public override async Task<PostedMessageAdapter> EditMessage(PostedMessageAdapter message)

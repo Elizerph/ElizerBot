@@ -1,5 +1,7 @@
 ﻿using ElizerBot.Adapter;
 
+using Telegram.Bot.Types;
+
 namespace ElizerBot.Example
 {
     public class ExampleUpdateHandler : IBotAdapterUpdateHandler
@@ -57,22 +59,45 @@ namespace ElizerBot.Example
             }
         }
 
+        private static async Task<Stream> GetTextStream(string text)
+        {
+            var memo = new MemoryStream();
+            var writer = new StreamWriter(memo);
+            await writer.WriteLineAsync(text);
+            await writer.FlushAsync();
+            return memo;
+        }
+
         public async Task HandleIncomingMessage(IBotAdapter bot, PostedMessageAdapter message)
         {
             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] {message.Chat.Id}.{message.User.Username}: {message.Text}");
-            using var memo = new MemoryStream();
-            using var writer = new StreamWriter(memo);
-            await writer.WriteLineAsync(message.Text);
-            writer.Flush();
+
             var fileResponse = new NewMessageAdapter(message.Chat)
             {
                 Text = "File response",
-                Attachment = new FileDescriptorAdapter("response.txt", () => memo)
+                Attachments = new[]
+                {
+                    new FileDescriptorAdapter("response.txt", () => GetTextStream(message.Text)),
+                    new FileDescriptorAdapter("response.txt", () => GetTextStream(message.Text))
+                }
             };
-            await bot.SendMessage(fileResponse);
-            await File.WriteAllTextAsync("tmp.txt", message.Text);
-            fileResponse.Attachment = new FileDescriptorAdapter("respFile.txt", () => File.OpenRead("tmp.txt"));
-            await bot.SendMessage(fileResponse);
+            //await bot.SendMessage(fileResponse);
+            if (message.Attachments != null && message.Attachments.Any())
+            {
+                var filesInfo = new List<string>();
+                foreach (var attachment in message.Attachments)
+                {
+                    using var stream = await attachment.ReadFile();
+                    using var reader = new StreamReader(stream);
+                    var fileHead = await reader.ReadToEndAsync();
+                    filesInfo.Add(new string(fileHead.Take(40).ToArray()));
+                }
+                var filesInfoResponse = new NewMessageAdapter(message.Chat)
+                {
+                    Text = string.Join(Environment.NewLine, filesInfo)
+                };
+                await bot.SendMessage(filesInfoResponse);
+            }
         }
     }
 }

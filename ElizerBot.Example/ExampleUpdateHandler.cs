@@ -77,11 +77,11 @@ namespace ElizerBot.Example
                 Text = "File response",
                 Attachments = new[]
                 {
-                    new FileDescriptorAdapter("response.txt", () => GetTextStream(message.Text)),
-                    new FileDescriptorAdapter("response.txt", () => GetTextStream(message.Text))
+                    new FileDescriptorAdapter("response1.txt", () => GetTextStream(message.Text)),
+                    new FileDescriptorAdapter("response2.txt", () => GetTextStream(message.Text))
                 }
             };
-            //await bot.SendMessage(fileResponse);
+            await bot.SendMessage(fileResponse);
             if (message.Attachments != null && message.Attachments.Any())
             {
                 var filesInfo = new List<string>();

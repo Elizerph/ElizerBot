@@ -45,7 +45,15 @@ namespace ElizerBot.Telegram
                             && (messageText.Contains($"@{_botUsername}") || message.Chat.Type == ChatType.Private))
                             await _updateHandler.HandleCommand(this, GetChatAdapter(message.Chat), GetUserAdapter(messageAuthor), messageText.Replace($"@{_botUsername}", string.Empty).TrimStart('/'));
                         else
+                        {
+                            if (message.Chat.Type != ChatType.Private)
+                                if (entities == null
+                                || entities.Length != 1
+                                || entities[0].Type != MessageEntityType.Mention
+                                || !string.Equals(message.Text.Substring(entities[0].Offset, entities[0].Length), $"@{_botUsername}"))
+                                    return;
                             await _documentBuffer.HandleIncomingMessage(this, message.MediaGroupId, GetIncomingMessageAdapter(message));
+                        }
                         break;
                     case UpdateType.CallbackQuery:
                         var queryMessage = u.CallbackQuery?.Message ?? throw new InvalidOperationException();
@@ -96,7 +104,7 @@ namespace ElizerBot.Telegram
         {
             var result = new PostedMessageAdapter(GetChatAdapter(message.Chat), message.MessageId.ToString(), GetUserAdapter(message.From))
             {
-                Text = message.Text,
+                Text = message.Text?.Replace($"@{_botUsername}", string.Empty) ?? string.Empty,
                 Buttons = GetButtonAdapters(message.ReplyMarkup)
             };
             if (message.Document != null)

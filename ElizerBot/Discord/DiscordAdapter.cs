@@ -51,11 +51,15 @@ namespace ElizerBot.Discord
             if (arg.Author.IsBot)
                 return;
 
+            if (arg.Channel is not IPrivateChannel)
+                if (arg.MentionedUsers.Count != 1 || arg.MentionedUsers.First().Id != _client.CurrentUser.Id)
+                    return;
+
             var message = new PostedMessageAdapter(GetChatAdapter(arg.Channel), arg.Id.ToString(), GetUserAdapter(arg.Author))
             {
-                Text = arg.Content ?? string.Empty,
+                Text = arg.CleanContent?.Replace($"@{_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}", string.Empty).Trim() ?? string.Empty,
                 Buttons = GetButtonAdapters(arg.Components),
-                Attachments = arg.Attachments.Select(e => new FileDescriptorAdapter(e.Filename, () => _httpClient.GetStreamAsync(e.Url))).ToArray()
+                Attachments = arg.Attachments?.Select(e => new FileDescriptorAdapter(e.Filename, () => _httpClient.GetStreamAsync(e.Url))).ToArray()
             };
             await _updateHandler.HandleIncomingMessage(this, message); 
         }

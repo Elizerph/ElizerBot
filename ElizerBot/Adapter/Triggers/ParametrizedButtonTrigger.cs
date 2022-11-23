@@ -12,12 +12,12 @@
             _dataSeparator = dataSeparator;
         }
 
-        public override bool Validate(ButtonTriggerArgument arg)
+        public override Task<bool> Validate(ButtonTriggerArgument arg)
         {
             var dataParts = arg.Data.Split(_dataSeparator);
             if (dataParts.Length < 1)
-                return false;
-            return string.Equals(_id, dataParts[0]);
+                return Task.FromResult(false);
+            return Task.FromResult(string.Equals(_id, dataParts[0]));
         }
     }
     public class ParametrizedButtonTrigger<TContext> : Trigger<TContext, ButtonTriggerArgument>
@@ -32,12 +32,12 @@
             _dataSeparator = dataSeparator;
         }
 
-        public override bool Validate(ButtonTriggerArgument arg)
+        public override Task<bool> Validate(ButtonTriggerArgument arg)
         {
             var dataParts = arg.Data.Split(_dataSeparator);
             if (dataParts.Length < 1)
-                return false;
-            return string.Equals(_id, dataParts[0]);
+                return Task.FromResult(false);
+            return Task.FromResult(string.Equals(_id, dataParts[0]));
         }
     }
 }

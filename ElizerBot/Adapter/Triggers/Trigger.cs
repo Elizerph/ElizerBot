@@ -3,7 +3,7 @@
     public abstract class TriggerBase<TArg>
         where TArg : TriggerArgument
     {
-        public abstract bool Validate(TArg arg);
+        public abstract Task<bool> Validate(TArg arg);
     }
 
     public abstract class Trigger<TArg> : TriggerBase<TArg>

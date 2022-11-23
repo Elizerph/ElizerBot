@@ -10,9 +10,9 @@
             _triggeringData = triggeringData;
         }
 
-        public override bool Validate(ButtonTriggerArgument arg)
+        public override Task<bool> Validate(ButtonTriggerArgument arg)
         {
-            return string.Equals(_triggeringData, arg.Data);
+            return Task.FromResult(string.Equals(_triggeringData, arg.Data));
         }
     }
 
@@ -26,9 +26,9 @@
             _triggeringData = triggeringData;
         }
 
-        public override bool Validate(ButtonTriggerArgument arg)
+        public override Task<bool> Validate(ButtonTriggerArgument arg)
         {
-            return string.Equals(_triggeringData, arg.Data);
+            return Task.FromResult(string.Equals(_triggeringData, arg.Data));
         }
     }
 }

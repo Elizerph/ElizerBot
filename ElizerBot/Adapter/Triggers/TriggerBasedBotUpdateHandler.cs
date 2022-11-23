@@ -20,7 +20,7 @@
             where T : TriggerArgument
         {
             foreach (var trigger in triggers)
-                if (trigger.Validate(argument))
+                if (await trigger.Validate(argument))
                     await trigger.Execute(argument);
         }
 
@@ -65,7 +65,7 @@
             where T : TriggerArgument
         {
             foreach (var trigger in triggers)
-                if (trigger.Validate(arg))
+                if (await trigger.Validate(arg))
                     await trigger.Execute(_context, arg);
         }
 

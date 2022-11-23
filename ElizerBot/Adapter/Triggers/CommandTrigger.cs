@@ -10,9 +10,9 @@
             _triggeringCommand = triggeringCommand;
         }
 
-        public override bool Validate(CommandTriggerArgument arg)
+        public override Task<bool> Validate(CommandTriggerArgument arg)
         {
-            return string.Equals(_triggeringCommand, arg.Command);
+            return Task.FromResult(string.Equals(_triggeringCommand, arg.Command));
         }
     }
 
@@ -26,9 +26,9 @@
             _triggeringCommand = triggeringCommand;
         }
 
-        public override bool Validate(CommandTriggerArgument arg)
+        public override Task<bool> Validate(CommandTriggerArgument arg)
         {
-            return string.Equals(_triggeringCommand, arg.Command);
+            return Task.FromResult(string.Equals(_triggeringCommand, arg.Command));
         }
     }
 }

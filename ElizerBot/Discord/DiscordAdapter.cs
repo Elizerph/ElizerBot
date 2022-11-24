@@ -15,7 +15,7 @@ namespace ElizerBot.Discord
         {
             var config = new DiscordSocketConfig
             { 
-               
+
             };
             _client = new DiscordSocketClient(config);
         }

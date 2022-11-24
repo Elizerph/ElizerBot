@@ -104,7 +104,7 @@ namespace ElizerBot.Telegram
         {
             var result = new PostedMessageAdapter(GetChatAdapter(message.Chat), message.MessageId.ToString(), GetUserAdapter(message.From))
             {
-                Text = message.Text?.Replace($"@{_botUsername}", string.Empty) ?? string.Empty,
+                Text = message.Text?.Replace($"@{_botUsername}", string.Empty).Trim() ?? string.Empty,
                 Buttons = GetButtonAdapters(message.ReplyMarkup)
             };
             if (message.Document != null)
